@@ -92,6 +92,10 @@ public class ScoreSaber {
             }
             String leaderboardUrl = getLeaderboardApiUrl(i, countryCode);
             JsonObject response = http.fetchJsonObject(leaderboardUrl);
+            if (response == null) {
+                // A single failed/rate-limited page request used to NPE here and abort the whole scan.
+                return null;
+            }
             JsonArray responsePlayerList = response.getAsJsonArray("players");
             Type listType = new TypeToken<List<ScoreSaberPlayer>>() {}.getType();
             entries.addAll(gson.fromJson(responsePlayerList, listType));

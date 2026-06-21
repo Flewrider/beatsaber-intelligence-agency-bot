@@ -28,7 +28,10 @@ public class AccSaber {
         List<PlayerScore> recentScores = getPlayerScores(url);
         if (recentScores != null) {
             int offset = pageNr - 1;
-            return recentScores.subList(8 * offset, 8 + 8 * offset);
+            // Clamp bounds: requesting page 6+ used to exceed the (max ~40) list size and throw.
+            int from = Math.min(8 * offset, recentScores.size());
+            int to = Math.min(8 + 8 * offset, recentScores.size());
+            return recentScores.subList(from, to);
         }
         return Collections.emptyList();
     }
@@ -39,7 +42,10 @@ public class AccSaber {
         List<PlayerScore> recentScores = getPlayerScores(url);
         if (recentScores != null && recentScores.size() > 0) {
             int offset = pageNr - 1;
-            return recentScores.subList(8 * offset, 8 + 8 * offset);
+            // Clamp bounds: requesting page 6+ used to exceed the (max ~40) list size and throw.
+            int from = Math.min(8 * offset, recentScores.size());
+            int to = Math.min(8 + 8 * offset, recentScores.size());
+            return recentScores.subList(from, to);
         }
         return Collections.emptyList();
     }

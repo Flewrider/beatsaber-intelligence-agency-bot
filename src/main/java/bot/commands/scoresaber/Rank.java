@@ -66,8 +66,14 @@ public class Rank {
             resultMessage += toEntryString(leaderboardEntries.get(playerIndex - 1), playerPp, leaderboardType);
         }
         resultMessage += toEntryString(playerEntry, -1, leaderboardType);
-        resultMessage += toEntryString(leaderboardEntries.get(playerIndex + 1), playerPp, leaderboardType);
-        resultMessage += toEntryString(leaderboardEntries.get(playerIndex + 2), playerPp, leaderboardType);
+        // Guard the upper bound like the lower bound above: a player at/near the end of the
+        // returned slice used to throw IndexOutOfBoundsException.
+        if (playerIndex + 1 < leaderboardEntries.size()) {
+            resultMessage += toEntryString(leaderboardEntries.get(playerIndex + 1), playerPp, leaderboardType);
+        }
+        if (playerIndex + 2 < leaderboardEntries.size()) {
+            resultMessage += toEntryString(leaderboardEntries.get(playerIndex + 2), playerPp, leaderboardType);
+        }
 
         String title = "";
         switch (leaderboardType) {

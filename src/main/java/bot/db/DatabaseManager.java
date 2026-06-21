@@ -129,9 +129,12 @@ public class DatabaseManager {
         Document document = database.getCollection("skills").find(Filters.eq("discord_user_id", idLong)).first();
         String updateField = "skills." + skill;
         if (document != null) {
-            database.getCollection("skills").updateOne(Filters.eq("discord_id", idLong), new Document("$set", new Document(updateField, newValue)));
+            // Was Filters.eq("discord_id", ...): the lookup above and the insert below use
+            // "discord_user_id", so updates never matched and skills silently failed to persist
+            // (re-inserting duplicates each time, and "ru stand" never finding them).
+            database.getCollection("skills").updateOne(Filters.eq("discord_user_id", idLong), new Document("$set", new Document(updateField, newValue)));
         } else {
-            Document newSkill = new Document("discord_id", idLong)
+            Document newSkill = new Document("discord_user_id", idLong)
                     .append("player_name", getPlayerByDiscordId(idLong).getName())
                     .append("skills", new Document(skill, newValue));
             database.getCollection("skills").insertOne(newSkill);
