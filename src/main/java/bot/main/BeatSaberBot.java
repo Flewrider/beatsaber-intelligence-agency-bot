@@ -4,6 +4,9 @@ import bot.api.BeatLeader;
 import bot.api.BeatSaver;
 import bot.api.ScoreSaber;
 import bot.commands.*;
+import bot.commands.beatleader.ClanRaid;
+import bot.commands.beatleader.ClanStats;
+import bot.commands.beatleader.ToConquer;
 import bot.commands.chart.PlayerChart;
 import bot.commands.chart.RadarStatsChart;
 import bot.commands.scoresaber.Qualified;
@@ -11,7 +14,11 @@ import bot.commands.scoresaber.Rank;
 import bot.commands.scoresaber.Ranked;
 import bot.db.DatabaseManager;
 import bot.dto.MessageEventDTO;
+import bot.dto.beatleader.ClanPlaylistFilter;
 import bot.dto.beatleader.player.BeatLeaderPlayer;
+import bot.main.beatleader.ClanMapsWatcher;
+import bot.main.beatleader.ClanPlayersWatcher;
+import bot.main.beatleader.ScheduledPlaylistGenerator;
 import bot.dto.player.DataBasePlayer;
 import bot.dto.player.PlayerSkills;
 import bot.dto.rankedmaps.RankedMaps;
@@ -86,6 +93,7 @@ public class BeatSaberBot extends ListenerAdapter {
             BeatSaberBot bot = new BeatSaberBot();
             bot.setupJDA();
             bot.setupLoggingAndLeaderboard();
+            bot.setupClanListeners();
             bot.registerSlashCommands();
         } catch (Exception e) {
             e.printStackTrace();
@@ -122,6 +130,15 @@ public class BeatSaberBot extends ListenerAdapter {
         LeaderboardWatcher watcher = new LeaderboardWatcher(db, ss, jda);
         watcher.createNewLeaderboardWatcher();
         watcher.start();
+    }
+
+    private void setupClanListeners() {
+        ClanPlayersWatcher watcherPlayers = new ClanPlayersWatcher("GER", db, jda);
+        watcherPlayers.startWatching();
+        ClanMapsWatcher watcherMaps = new ClanMapsWatcher("GER", db, jda);
+        watcherMaps.startWatching();
+        ScheduledPlaylistGenerator playlistGenerator = new ScheduledPlaylistGenerator();
+        playlistGenerator.start();
     }
 
     private void registerSlashCommands() {
@@ -290,6 +307,54 @@ public class BeatSaberBot extends ListenerAdapter {
                         Messages.sendMessage("Invalid number of parameters.", event);
                     }
                     break;
+                case "clanplaylist": {
+                    int count = 200;
+                    ClanPlaylistFilter filter = null;
+                    int index = 2;
+                    if (msgParts.size() > index && NumberUtils.isCreatable(msgParts.get(index))) {
+                        count = Integer.parseInt(msgParts.get(index++));
+                    }
+                    float accRating = 9999999.0f;
+                    float passRating = 9999999.0f;
+                    float techRating = 9999999.0f;
+                    boolean unplayed = false;
+                    while (index < msgParts.size()) {
+                        switch (msgParts.get(index).toLowerCase()) {
+                            case "acc":
+                                accRating = extractRating(msgParts, ++index);
+                                break;
+                            case "pass":
+                                passRating = extractRating(msgParts, ++index);
+                                break;
+                            case "tech":
+                                techRating = extractRating(msgParts, ++index);
+                                break;
+                            case "unplayed":
+                                unplayed = true;
+                                break;
+                        }
+                        ++index;
+                    }
+                    if (accRating != 9999999.0f || passRating != 9999999.0f || techRating != 9999999.0f || unplayed) {
+                        filter = new ClanPlaylistFilter(accRating, passRating, techRating, unplayed);
+                    }
+                    new ToConquer().sendToConquerPlaylist(count, filter, commandPlayer, event);
+                    break;
+                }
+                case "clanraid": {
+                    String clanTag = msgParts.size() > 2 ? msgParts.get(2) : null;
+                    if (clanTag == null) {
+                        Messages.sendMessage("Missing clan tag param", event);
+                        return;
+                    }
+                    clanTag = clanTag.toUpperCase();
+                    new ClanRaid().sendClanRaidPlaylist(clanTag, event);
+                    break;
+                }
+                case "clanstats": {
+                    new ClanStats(db).executeClanStatsCommand(event);
+                    break;
+                }
                 case "randommeme":
                     new RandomMeme().sendRandomMeme(channel);
                     break;
@@ -439,6 +504,13 @@ public class BeatSaberBot extends ListenerAdapter {
             return Integer.parseInt(msgParts.get(2));
         }
         return 1;
+    }
+
+    private float extractRating(List<String> msgParts, int index) {
+        if (index < msgParts.size() && NumberUtils.isCreatable(msgParts.get(index))) {
+            return Float.parseFloat(msgParts.get(index));
+        }
+        return 0.0f;
     }
 
     private void fetchRankedMapsIfNonExistent(TextChannel channel) {

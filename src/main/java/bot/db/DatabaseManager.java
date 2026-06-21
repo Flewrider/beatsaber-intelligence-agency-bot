@@ -18,13 +18,16 @@ import org.bson.Document;
 import org.bson.conversions.Bson;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class DatabaseManager {
     private MongoClient mongoClient;
     private MongoDatabase database;
     private MongoCollection<Document> playersCollection;
     private MongoCollection<Document> supportersCollection;
+    private MongoCollection<Document> captureCountsCollection;
 
     public void connectToDatabase() {
         try {
@@ -35,6 +38,7 @@ public class DatabaseManager {
                 database = mongoClient.getDatabase(DBConstants.DB_DATABASE);
                 playersCollection = database.getCollection("players");
                 supportersCollection = database.getCollection("supporters");
+                captureCountsCollection = database.getCollection("clancapturecounts");
                 System.out.println("*** Connected to database: MongoDB");
             }
         } catch (Exception e) {
@@ -104,6 +108,38 @@ public class DatabaseManager {
         }
         Document document = database.getCollection("players").find(Filters.eq("player_name", playerName)).first();
         return document != null ? DataBasePlayer.fromDocument(document) : null;
+    }
+
+    public DataBasePlayer getPlayerById(long playerId) {
+        Document document = playersCollection.find(Filters.eq("player_id", playerId)).first();
+        return document != null ? DataBasePlayer.fromDocument(document) : null;
+    }
+
+    public void incrementCaptureCount(long playerId) {
+        Document document = captureCountsCollection.find(Filters.eq("player_id", playerId)).first();
+        if (document != null) {
+            int count = document.getInteger("count");
+            captureCountsCollection.updateOne(Filters.eq("player_id", playerId), new Document("$set", new Document("count", count + 1)));
+        } else {
+            document = new Document("player_id", playerId).append("count", 1);
+            captureCountsCollection.insertOne(document);
+        }
+    }
+
+    public Map<Long, Integer> getCaptureCounts() {
+        Map<Long, Integer> counts = new HashMap<>();
+        FindIterable<Document> documents = captureCountsCollection.find();
+        for (Document doc : documents) {
+            Number playerId = doc.get("player_id", Number.class);
+            Integer count = doc.getInteger("count", 0);
+            counts.put(playerId.longValue(), count);
+        }
+        return counts;
+    }
+
+    public int getCaptureCount(long playerId) {
+        Document document = captureCountsCollection.find(Filters.eq("player_id", playerId)).first();
+        return document != null ? document.getInteger("count", 0) : 0;
     }
 
     public DataBasePlayer getPlayerByDiscordId(long discordUserId) {
