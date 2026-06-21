@@ -29,8 +29,15 @@ public class BotConstants {
     public static final long patreonChadSupporterRoleId = Long.parseLong(System.getenv("patreon_chad_role_id"));
 
     public static final long bsgOutputChannelId = Long.parseLong(System.getenv("bsg_channel_id"));
+    public static final long bsgClanChannelId = Long.parseLong(System.getenv("bsg_clan_channel_id"));
 
     public static final String bsgImage = "https://i.imgur.com/PlKkLyM.png";
+
+    // BeatLeader clan
+    public static final String clanConquerPlaylistSyncUrl = "https://anti.link/playlists/BSG_Conquer_Maps.json";
+    public static final String playlistImageRaidBsgUrl = "https://i.imgur.com/2V038wD.png";
+    public static final String playlistImageBsg = getImageBase64("bsg.png");
+    public static final String filterPlaylistImageBsg = getImageBase64("bsgFilter.png");
 
     // Role milestones
     public static final Integer[] bsgCountryRankMilestones = {1, 5, 10, 25, 50, 75, 100, 200};

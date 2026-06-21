@@ -7,6 +7,14 @@ public class ApiConstants {
     //Backend
     public static final String BACKEND_URL = "http://localhost:3001";
     public static final String COMPARISON_URL = BACKEND_URL + "/comparisonImage";
+    public static final String CLAN_PLAYER_URL = "/clan/%s/players";
+    public static final String CLAN_MAPS_URL = "/clan/%s/maps?sortBy=%s&maxPage=%d";
+    public static String getClanPlayerUrl(String clanId) {
+        return String.format(BACKEND_URL + CLAN_PLAYER_URL, clanId);
+    }
+    public static String getClanMapsUrl(String clanId, String sortBy, int maxPage) {
+        return String.format(BACKEND_URL + CLAN_MAPS_URL, clanId, sortBy, maxPage);
+    }
 
     // ScoreSaber
     public static final String SS_PRE_URL = "https://scoresaber.com";
@@ -57,6 +65,26 @@ public class ApiConstants {
     }
     public static String getBeatLeaderPlayerByDiscordId(long discordId) {
         return String.format(BL_PRE_URL + BL_USER_PLAYER_BY_DISCORD_URL, discordId);
+    }
+    public static final String BL_LEADERBOARD_URL = "/leaderboard/%s?leaderboardContext=general&page=1&sortBy=date&order=desc";
+    public static final String BL_LEADERBOARD_CLAN_RANKING_URL = "/leaderboard/clanRankings/%s?page=1";
+    public static final String BL_PLAYER_SCORE_URL = "/score/%s/%s/%s/%s/%s";
+    public static final String BL_ALL_RANKED_SCORES_URL = "/player/%s/accgraph?leaderboardContext=general";
+    public static final String BL_CLAN_TO_HOLD_MAPS_URL = "https://beatleader.xyz/clan/maps/%s/1?sortBy=tohold";
+    public static String getBeatLeaderLeaderboardURL(String leaderboardId) {
+        return String.format(BL_PRE_URL + BL_LEADERBOARD_URL, leaderboardId);
+    }
+    public static String getBeatLeaderLeaderboardClanRankingURL(String leaderboardId) {
+        return String.format(BL_PRE_URL + BL_LEADERBOARD_CLAN_RANKING_URL, leaderboardId);
+    }
+    public static String getBeatLeaderClanToHoldMapsURL(String clanId) {
+        return String.format(BL_CLAN_TO_HOLD_MAPS_URL, clanId);
+    }
+    public static String getBeatLeaderPlayerScoreURL(String leaderboardContext, String playerId, String hash, String diffName, String characteristic) {
+        return String.format(BL_PRE_URL + BL_PLAYER_SCORE_URL, leaderboardContext, playerId, hash, diffName, characteristic);
+    }
+    public static String getBeatLeaderRankedScoresURL(String playerId) {
+        return String.format(BL_PRE_URL + BL_ALL_RANKED_SCORES_URL, playerId);
     }
     public static final String BL_USER_PRE_URL = "https://www.beatleader.xyz/u/";
     public static final String BL_LEADERBOARD_PRE_URL = "https://www.beatleader.xyz/leaderboard/global/";
