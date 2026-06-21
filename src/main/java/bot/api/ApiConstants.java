@@ -98,7 +98,6 @@ public class ApiConstants {
         return String.format(ACC_PRE_URL + ACC_SCORES_URL, playerId, pageNr, "ap");
     }
     public static String getAccSaberRecentScoresURL(String playerId, int pageNr) {
-        System.out.println(String.format(ACC_PRE_URL + ACC_SCORES_URL, playerId, pageNr, "timeSet"));
         return String.format(ACC_PRE_URL + ACC_SCORES_URL, playerId, pageNr, "timeSet");
     }
     public static final String ACC_USER_URL = "/profile/%s/overall/scores";

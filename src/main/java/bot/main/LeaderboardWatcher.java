@@ -138,7 +138,9 @@ public class LeaderboardWatcher {
             if (playerHasJustWentInactive) {
                 String inactiveMessage = Format.underline(Format.bold(updatedPlayer.getName())) + " just went inactive! (Previously " + Format.bold("#" + oldPlayer.getCountryRank() + " DE)");
                 Messages.sendBsgRankMessage(inactiveMessage, "F", updatedPlayer.getProfileURL(), Color.orange, updatedPlayer.getProfilePicture(), bsgOutput);
-                return;
+                // Was `return;`, which aborted the whole loop on the first inactive player,
+                // skipping every remaining DE player's role/snipe update for that cycle.
+                continue;
             }
             if (playerImproved && !isInactive) {
                 //Send message (only improvement)

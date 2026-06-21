@@ -164,7 +164,7 @@ public class DataBasePlayer implements Serializable, LeaderboardServicePlayer {
                 .append("player_discord_user_id", discordUserId)
                 .append("player_historyValues", historyValues)
                 .append("player_histories", histories)
-                .append("player_scoreStats", scoreStats.toDocument())
+                .append("player_scoreStats", scoreStats == null ? null : scoreStats.toDocument())
                 .append("user_customAccGridImage", customAccGridImage);
     }
 
