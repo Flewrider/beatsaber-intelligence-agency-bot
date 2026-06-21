@@ -3,7 +3,6 @@ package bot.main;
 import bot.api.ScoreSaber;
 import bot.db.DatabaseManager;
 import bot.dto.player.DataBasePlayer;
-import bot.roles.RoleManager;
 import bot.roles.RoleManagerBSG;
 import bot.utils.DiscordLogger;
 import bot.utils.Format;
@@ -114,23 +113,22 @@ public class LeaderboardWatcher {
             //Role change
             boolean isInactive = updatedPlayer.getCountryRank() == 0;
             Member member = bsgMembers.stream().filter(m -> m.getIdLong() == updatedPlayer.getDiscordUserId()).findFirst().orElse(null);
-            if (member != null && RoleManagerBSG.isNewMilestone(updatedPlayer.getCountryRank(), member)) {
-                //Remove all "Top "... bot.roles
-                RoleManager.removeMemberRolesByName(member, BotConstants.topRolePrefix);
-                if (!isInactive) {
+            if (member != null) {
+                // Idempotent: only changes roles when the member doesn't already hold the correct
+                // milestone role. Returns true only when a new milestone role was actually added,
+                // which stops the endless add/remove role flapping on every refresh.
+                boolean reachedNewMilestone = RoleManagerBSG.syncMilestoneRole(member, updatedPlayer.getCountryRank(), isInactive);
+                if (reachedNewMilestone) {
                     //Log
                     System.out.println("Updating member: "+member.getEffectiveName());
                     int milestone = ListValueUtils.findBsgMilestoneForRank(updatedPlayer.getCountryRank());
                     String newRoleMessage = "Changed BSG role: " + updatedPlayer.getName() + " New Rank: " + updatedPlayer.getCountryRank() + " - Old Rank: " + oldPlayer.getCountryRank() + "   " + "(Top " + milestone + ")";
                     DiscordLogger.sendLogInChannel(newRoleMessage, DiscordLogger.WATCHER_REFRESH);
 
-                    //Add "Top xxx DE" role
-                    RoleManagerBSG.assignMilestoneRole(updatedPlayer.getCountryRank(), member);
                     if (updatedPlayer.getCountryRank() < oldPlayer.getCountryRank()) {
                         Messages.sendBsgRankMessage("🎉 " + Format.bold(Format.underline(updatedPlayer.getName())) + " is now part of the " + Format.underline("Top " + milestone) + " in Germany! Congrats! 🎉", "", updatedPlayer.getProfileURL(), Color.RED, updatedPlayer.getProfilePicture(), bsgOutput);
                     }
                 }
-
             }
             //Snipe Channel
             boolean playerImproved = updatedPlayer.getCountryRank() < oldPlayer.getCountryRank() && updatedPlayer.getPp() != oldPlayer.getPp();

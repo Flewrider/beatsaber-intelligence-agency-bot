@@ -9,8 +9,11 @@ import java.util.stream.Collectors;
 
 public class RoleManager {
     public static void removeMemberRolesByName(Member member, String name) {
-        List<Role> milestoneRoles = getMemberRolesByName(member, name);
-        for (Role role : milestoneRoles) {
+        removeMemberRoles(member, getMemberRolesByName(member, name));
+    }
+
+    public static void removeMemberRoles(Member member, List<Role> roles) {
+        for (Role role : roles) {
             try {
                 member.getGuild().removeRoleFromMember(member, role).queue();
             } catch (Exception e) {
