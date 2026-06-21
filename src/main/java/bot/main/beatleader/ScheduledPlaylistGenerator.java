@@ -30,6 +30,10 @@ public class ScheduledPlaylistGenerator {
             String playlistTitle = "GER Conquer Maps - " + formattedDateTime;
             String filePath = System.getenv("clan_playlist_path") + "BSG_Conquer_Maps.json";
             List<ClanMap> maps = this.backend.getClanMaps("GER", "toconquer", 10);
+            if (maps == null) {
+                DiscordLogger.sendLogInChannel("Could not fetch clan maps; skipping playlist generation this cycle.", "errors");
+                return;
+            }
             PlaylistGenerator.generatePlaylistFile(maps, playlistTitle, BotConstants.playlistImageBsg, filePath, "bsgconquer", "https://anti.link/playlists/BSG_Conquer_Maps.json");
             DiscordLogger.sendLogInChannel("\ud83d\udd35 Updated clan sync playlist", "foaa-refresh");
         }

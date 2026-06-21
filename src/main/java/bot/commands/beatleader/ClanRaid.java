@@ -36,6 +36,10 @@ public class ClanRaid {
         }
         Messages.sendTempMessage("Loading maps. Please wait... \u2728", 14, (MessageChannel)event.getChannel());
         List<ClanMap> maps = this.backend.getClanMaps(clanTag, "tohold", 10);
+        if (maps == null) {
+            Messages.sendMessage("Could not fetch clan maps. Please try again later.", event);
+            return;
+        }
         if (maps.isEmpty()) {
             Messages.sendMessage("No maps found to conquer.", event);
             return;

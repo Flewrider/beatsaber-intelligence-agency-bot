@@ -56,7 +56,7 @@ public class ClanRankingItem {
         this.averageAccuracy = averageAccuracy;
     }
 
-    public class Clan {
+    public static class Clan {
         private int id;
         private String name;
         private String color;

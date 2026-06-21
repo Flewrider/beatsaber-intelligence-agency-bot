@@ -25,13 +25,19 @@ public class ToConquer {
         Messages.sendTempMessage(tempMessage, tempMessageDuration, (MessageChannel)event.getChannel());
         int maxPage = filter != null ? 20 : 10;
         List<ClanMap> maps = this.backend.getClanMaps("GER", "toconquer", maxPage);
+        if (maps == null) {
+            Messages.sendMessage("Could not fetch clan maps. Please try again later.", event);
+            return;
+        }
         StringBuilder titleDetails = new StringBuilder();
         StringBuilder filenameDetails = new StringBuilder();
         if (filter != null) {
             maps.removeIf(map -> map.getAccRating() > filter.getMaxAccRating() || map.getPassRating() > filter.getMaxPassRating() || map.getTechRating() > filter.getMaxTechRating());
             if (filter.isUnplayedOnly()) {
                 List<PlayerBLRankedScore> playerRankedScores = this.bl.getAllPlayerRankedScores(player.getPlayerIdLong());
-                maps.removeIf(map -> playerRankedScores.stream().anyMatch(s -> s.getLeaderboardId().equals(map.getLeaderboardId())));
+                if (playerRankedScores != null) {
+                    maps.removeIf(map -> playerRankedScores.stream().anyMatch(s -> s.getLeaderboardId().equals(map.getLeaderboardId())));
+                }
             }
             if (filter.getMaxAccRating() != 9999999.0f) {
                 titleDetails.append(" Acc \u2264 ").append(filter.getMaxAccRating()).append(",");
