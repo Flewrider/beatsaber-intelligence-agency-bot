@@ -24,6 +24,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 public class LeaderboardWatcher {
+    // Keeps sustained polling under ScoreSaber's long-window limit of 400 requests / 60s.
+    private static final long SCORESABER_REQUEST_DELAY_MS = 175;
+
     DatabaseManager db;
     ScoreSaber ss;
     JDA jda;
@@ -46,7 +49,6 @@ public class LeaderboardWatcher {
             String updatingMessage = "----- Starting User Refresh... [" + Format.oneDigitZero(LocalTime.now().getHour()) + ":" + Format.oneDigitZero(LocalTime.now().getMinute()) + "]";
             DiscordLogger.sendLogInChannel(updatingMessage, DiscordLogger.WATCHER_REFRESH);
             try {
-                int fetchCounter = 0;
                 List<DataBasePlayer> oldPlayers = db.getAllStoredPlayers();
                 List<DataBasePlayer> updatedPlayers = new ArrayList<>();
                 //Iterate over stored players
@@ -70,15 +72,15 @@ public class LeaderboardWatcher {
                         db.updatePlayer(updatedPlayer);
                     }
 
+                    // ScoreSaber allows ~400 requests / 60s (and 100 / 10s, 25 / 1s). The old 50ms
+                    // delay meant ~20 req/s, roughly 3x over the long-window limit, which is what
+                    // started getting the bot rate limited. Space requests just over the long-window
+                    // budget instead (1 request / 175ms ~= 343 req/min). 429s are additionally retried
+                    // with backoff in HttpMethods, so the periodic one-minute pause is no longer needed.
                     try {
-                        TimeUnit.MILLISECONDS.sleep(50);
+                        TimeUnit.MILLISECONDS.sleep(SCORESABER_REQUEST_DELAY_MS);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
-                    }
-                    fetchCounter++;
-
-                    if (fetchCounter % 200 == 0) {
-                        TimeUnit.MINUTES.sleep(1);
                     }
                 }
 
