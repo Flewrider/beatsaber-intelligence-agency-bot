@@ -4,6 +4,7 @@ import bot.utils.DiscordLogger;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import org.apache.commons.httpclient.Header;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.cookie.CookiePolicy;
@@ -22,6 +23,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.*;
 
 public class HttpMethods {
+
+    private static final int TOO_MANY_REQUESTS = 429;
+    private static final int MAX_RETRIES = 4;
 
     final HttpClient http;
 
@@ -56,22 +60,71 @@ public class HttpMethods {
     }
 
     public InputStream get(String url) throws IOException {
-        GetMethod get = new GetMethod(url);
-        setAgent(get);
-        int statusCode = http.executeMethod(get);
-        if (statusCode != 200) {
+        int attempt = 0;
+        while (true) {
+            GetMethod get = new GetMethod(url);
+            setAgent(get);
+            int statusCode = http.executeMethod(get);
+
+            if (statusCode == 200) {
+                InputStream response = null;
+                try {
+                    response = get.getResponseBodyAsStream();
+                } catch (IOException e) {
+                    closeStream(response);
+                    DiscordLogger.sendLogInChannel(e.getMessage(), DiscordLogger.HTTP_ERRORS);
+                }
+                return response;
+            }
+
+            // ScoreSaber (and other APIs) answer with 429 when rate limited. Respect the
+            // Retry-After / X-RateLimit-Reset headers and retry instead of silently dropping the
+            // player for this refresh cycle.
+            if (statusCode == TOO_MANY_REQUESTS && attempt < MAX_RETRIES) {
+                long waitMs = retryDelayMillis(get, attempt);
+                get.releaseConnection();
+                attempt++;
+                try {
+                    Thread.sleep(waitMs);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    return null;
+                }
+                continue;
+            }
+
             DiscordLogger.sendLogInChannel("Data could not be fetched. (" + url + ")\nStatuscode: " + statusCode, DiscordLogger.HTTP_ERRORS);
+            get.releaseConnection();
             return null;
         }
+    }
 
-        InputStream response = null;
-        try {
-            response = get.getResponseBodyAsStream();
-        } catch (IOException e) {
-            closeStream(response);
-            DiscordLogger.sendLogInChannel(e.getMessage(), DiscordLogger.HTTP_ERRORS);
+    private long retryDelayMillis(GetMethod get, int attempt) {
+        long seconds = headerSeconds(get, "Retry-After");
+        if (seconds <= 0) {
+            seconds = headerSeconds(get, "X-RateLimit-Reset-Short");
         }
-        return response;
+        if (seconds <= 0) {
+            seconds = headerSeconds(get, "X-RateLimit-Reset-Medium");
+        }
+        if (seconds <= 0) {
+            // Exponential backoff fallback: 1s, 2s, 4s, ...
+            return 1000L * (1L << attempt);
+        }
+        // Small cushion so we come back just after the window has reset.
+        return Math.max(1000L, seconds * 1000L + 250L);
+    }
+
+    private long headerSeconds(GetMethod get, String name) {
+        Header header = get.getResponseHeader(name);
+        if (header == null || header.getValue() == null) {
+            return 0;
+        }
+        try {
+            return Long.parseLong(header.getValue().trim());
+        } catch (NumberFormatException e) {
+            return 0;
+        }
     }
 
     public JsonObject fetchJsonObject(String url) {
